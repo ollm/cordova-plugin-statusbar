@@ -20,11 +20,15 @@
 package org.apache.cordova.statusbar;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.os.Build;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.WindowMetrics;
+import android.view.WindowInsets;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaArgs;
@@ -221,10 +225,20 @@ public class StatusBar extends CordovaPlugin {
 
     private float getStatusBarHeight() {
         float statusBarHeight = 0;
+        float scaleRatio = cordova.getActivity().getResources().getDisplayMetrics().density;
         int resourceId = cordova.getActivity().getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
-            float scaleRatio = cordova.getActivity().getResources().getDisplayMetrics().density;
             statusBarHeight = cordova.getActivity().getResources().getDimension(resourceId) / scaleRatio;
+        }
+        float cutoutHeight = 0;
+        if(Build.VERSION.SDK_INT >= 30) {
+            WindowManager windowManager = (WindowManager) cordova.getActivity().getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
+            WindowMetrics windowMetrics = windowManager.getCurrentWindowMetrics();
+            Insets insets = windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(WindowInsets.Type.displayCutout()); // WindowInsets.Type.statusBars()
+            cutoutHeight = insets.top > 0 ? insets.top / scaleRatio : 0;
+        }
+        if(cutoutHeight > statusBarHeight) {
+            statusBarHeight = cutoutHeight;
         }
         return statusBarHeight;
     }
